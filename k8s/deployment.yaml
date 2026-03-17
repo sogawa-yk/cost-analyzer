@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cost-analyzer
+  labels:
+    app: cost-analyzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cost-analyzer
+  template:
+    metadata:
+      labels:
+        app: cost-analyzer
+    spec:
+      containers:
+        - name: cost-analyzer
+          image: cost-analyzer:latest
+          command: ["python", "-m", "cost_analyzer", "serve"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: cost-analyzer-config
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10

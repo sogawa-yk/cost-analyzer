@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-analyzer-config
+data:
+  OCI_AUTH_TYPE: "instance_principal"
+  OCI_GENAI_ENDPOINT: "https://inference.generativeai.ap-osaka-1.oci.oraclecloud.com"
+  OCI_GENAI_MODEL: "google/gemini-2.5-flash"
+  LOG_LEVEL: "INFO"
