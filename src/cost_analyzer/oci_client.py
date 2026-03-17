@@ -27,8 +27,12 @@ class OCIClient:
         self._tenancy_id = settings.oci_tenancy_id or self._config.get("tenancy")
         self._compartment_id = settings.oci_compartment_id or self._tenancy_id
 
+        # Usage API はホームリージョンでのみ実行可能
+        usage_config = dict(self._config)
+        if settings.oci_home_region:
+            usage_config["region"] = settings.oci_home_region
         self._usage_client = oci.usage_api.UsageapiClient(
-            config=self._config,
+            config=usage_config,
             signer=self._signer,
             retry_strategy=oci.retry.DEFAULT_RETRY_STRATEGY,
         )
@@ -154,7 +158,9 @@ class OCIClient:
         )
 
         items = []
-        for summary in response.data.items:
+        # list_call_get_all_results returns Response with data as list
+        summaries = response.data if isinstance(response.data, list) else response.data.items
+        for summary in summaries:
             if summary.computed_amount is None:
                 continue
             items.append(

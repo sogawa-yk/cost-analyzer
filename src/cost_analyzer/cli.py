@@ -10,7 +10,7 @@ from rich.console import Console
 from cost_analyzer.config import get_settings, setup_logging
 from cost_analyzer.models import ErrorResponse, ErrorType, QueryType
 
-app = typer.Typer(help="自然言語 OCI コストクエリツール")
+app = typer.Typer(help="自然言語 OCI コストクエリツール", invoke_without_command=True)
 console = Console()
 err_console = Console(stderr=True)
 
@@ -22,13 +22,19 @@ EXIT_CODES = {
 }
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def query(
-    query_text: Annotated[str, typer.Argument(help="自然言語コストクエリ")],
+    ctx: typer.Context,
+    query_text: Annotated[str | None, typer.Argument(help="自然言語コストクエリ")] = None,
     format: Annotated[str, typer.Option("--format", "-f", help="出力フォーマット: table, json, csv")] = "table",
     lang: Annotated[str, typer.Option("--lang", "-l", help="応答言語: ja, en, auto")] = "auto",
 ) -> None:
     """自然言語でOCIコストを照会します。"""
+    if ctx.invoked_subcommand is not None:
+        return
+    if query_text is None:
+        console.print(ctx.get_help())
+        raise typer.Exit(code=0)
     settings = get_settings()
     setup_logging(settings.log_level)
 

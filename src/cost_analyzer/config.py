@@ -21,11 +21,12 @@ class Settings(BaseSettings):
     )
     oci_tenancy_id: str | None = Field(default=None, alias="OCI_TENANCY_ID")
     oci_compartment_id: str | None = Field(default=None, alias="OCI_COMPARTMENT_ID")
+    oci_home_region: str | None = Field(default=None, alias="OCI_HOME_REGION")
     oci_genai_endpoint: str = Field(
         default="https://inference.generativeai.ap-osaka-1.oci.oraclecloud.com",
         alias="OCI_GENAI_ENDPOINT",
     )
-    oci_genai_model: str = Field(default="google/gemini-2.5-flash", alias="OCI_GENAI_MODEL")
+    oci_genai_model: str = Field(default="meta.llama-3.3-70b-instruct", alias="OCI_GENAI_MODEL")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     model_config = {"populate_by_name": True}
