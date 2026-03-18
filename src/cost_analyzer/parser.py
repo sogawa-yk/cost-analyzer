@@ -48,14 +48,14 @@ COST_QUERY_SCHEMA = {
     "type": "object",
     "properties": {
         "query_type": {"type": "string", "enum": ["breakdown", "comparison"]},
-        "start_date": {"type": "string", "format": "date"},
-        "end_date": {"type": "string", "format": "date"},
-        "comparison_start_date": {"type": ["string", "null"], "format": "date"},
-        "comparison_end_date": {"type": ["string", "null"], "format": "date"},
-        "service_filter": {"type": ["string", "null"]},
-        "compartment_filter": {"type": ["string", "null"]},
+        "start_date": {"type": "string"},
+        "end_date": {"type": "string"},
+        "comparison_start_date": {"type": "string"},
+        "comparison_end_date": {"type": "string"},
+        "service_filter": {"type": "string"},
+        "compartment_filter": {"type": "string"},
         "needs_clarification": {"type": "boolean"},
-        "clarification_message": {"type": ["string", "null"]},
+        "clarification_message": {"type": "string"},
         "detected_language": {"type": "string", "enum": ["ja", "en"]},
     },
     "required": [
@@ -121,24 +121,26 @@ def parse_query(query: str, oci_client) -> CostQuery | ErrorResponse:
             extra={"extra_data": {"result": result}},
         )
 
+        def _nullable_str(val: str | None) -> str | None:
+            """LLM が返す "null" や空文字を None に変換する。"""
+            if val is None or val in ("null", "None", ""):
+                return None
+            return val
+
+        def _nullable_date(val: str | None) -> date | None:
+            s = _nullable_str(val)
+            return date.fromisoformat(s) if s else None
+
         return CostQuery(
             query_type=QueryType(result["query_type"]),
             start_date=date.fromisoformat(result["start_date"]),
             end_date=date.fromisoformat(result["end_date"]),
-            comparison_start_date=(
-                date.fromisoformat(result["comparison_start_date"])
-                if result.get("comparison_start_date")
-                else None
-            ),
-            comparison_end_date=(
-                date.fromisoformat(result["comparison_end_date"])
-                if result.get("comparison_end_date")
-                else None
-            ),
-            service_filter=result.get("service_filter"),
-            compartment_filter=result.get("compartment_filter"),
+            comparison_start_date=_nullable_date(result.get("comparison_start_date")),
+            comparison_end_date=_nullable_date(result.get("comparison_end_date")),
+            service_filter=_nullable_str(result.get("service_filter")),
+            compartment_filter=_nullable_str(result.get("compartment_filter")),
             needs_clarification=result.get("needs_clarification", False),
-            clarification_message=result.get("clarification_message"),
+            clarification_message=_nullable_str(result.get("clarification_message")),
             detected_language=result.get("detected_language", "ja"),
         )
 

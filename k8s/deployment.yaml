@@ -16,20 +16,25 @@ spec:
     spec:
       containers:
         - name: cost-analyzer
-          image: cost-analyzer:latest
-          command: ["python", "-m", "cost_analyzer", "serve"]
+          image: yyz.ocir.io/orasejapan/cost-analyzer:latest
+          imagePullPolicy: Always
+          args: ["serve"]
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
                 name: cost-analyzer-config
+          volumeMounts:
+            - name: oci-config
+              mountPath: /home/app/.oci
+              readOnly: true
           resources:
             limits:
               memory: "512Mi"
               cpu: "500m"
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "128Mi"
+              cpu: "100m"
           livenessProbe:
             httpGet:
               path: /health
@@ -42,3 +47,16 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: oci-config
+          secret:
+            secretName: oci-api-key
+            items:
+              - key: config
+                path: config
+              - key: oci_api_key.pem
+                path: oci_api_key.pem
+      nodeSelector:
+        kubernetes.io/hostname: "10.0.10.92"
+      imagePullSecrets:
+        - name: ocir

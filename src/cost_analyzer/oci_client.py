@@ -189,15 +189,8 @@ class OCIClient:
         Returns:
             サービス名のリスト。
         """
-        details = oci.usage_api.models.RequestSummarizedUsagesDetails(
-            tenant_id=self._tenancy_id,
-            time_usage_started=datetime.combine(date.today(), datetime.min.time()),
-            time_usage_ended=datetime.combine(date.today(), datetime.min.time()),
-            granularity="DAILY",
-            query_type="COST",
-        )
         response = self._usage_client.request_summarized_configurations(
-            details,
+            tenant_id=self._tenancy_id,
         )
         services: list[str] = []
         for config in response.data.items:
@@ -218,15 +211,8 @@ class OCIClient:
         Returns:
             コンパートメント名のリスト。
         """
-        details = oci.usage_api.models.RequestSummarizedUsagesDetails(
-            tenant_id=self._tenancy_id,
-            time_usage_started=datetime.combine(date.today(), datetime.min.time()),
-            time_usage_ended=datetime.combine(date.today(), datetime.min.time()),
-            granularity="DAILY",
-            query_type="COST",
-        )
         response = self._usage_client.request_summarized_configurations(
-            details,
+            tenant_id=self._tenancy_id,
         )
         compartments: list[str] = []
         for config in response.data.items:

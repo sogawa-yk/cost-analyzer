@@ -28,7 +28,10 @@ packages = ["src/cost_analyzer"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--cov=cost_analyzer --cov-report=term-missing --cov-fail-under=60"
+addopts = "--cov=cost_analyzer --cov-report=term-missing --cov-fail-under=60 -m 'not oci'"
+markers = [
+    "oci: 実 OCI 接続が必要な統合テスト（-m oci で実行）",
+]
 
 [tool.ruff]
 target-version = "py313"
