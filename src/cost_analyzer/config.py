@@ -27,6 +27,7 @@ class Settings(BaseSettings):
         alias="OCI_GENAI_ENDPOINT",
     )
     oci_genai_model: str = Field(default="meta.llama-3.3-70b-instruct", alias="OCI_GENAI_MODEL")
+    a2a_api_key: str | None = Field(default=None, alias="A2A_API_KEY")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     model_config = {"populate_by_name": True}

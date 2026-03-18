@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,6 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from cost_analyzer.a2a_server import create_a2a_app
 from cost_analyzer.config import get_settings, setup_logging
@@ -49,6 +51,38 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="cost-analyzer", lifespan=lifespan)
+
+# A2A エンドポイントの API キー認証ミドルウェア
+_A2A_PROTECTED_PATHS = {"/a2a", "/.well-known/agent-card.json"}
+
+
+class A2AApiKeyMiddleware(BaseHTTPMiddleware):
+    """A2A エンドポイントへのリクエストに API キー認証を適用する。"""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path not in _A2A_PROTECTED_PATHS:
+            return await call_next(request)
+
+        settings = get_settings()
+        if not settings.a2a_api_key:
+            return await call_next(request)
+
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+        else:
+            token = request.headers.get("X-API-Key", "")
+
+        if not token or not hmac.compare_digest(token, settings.a2a_api_key):
+            return JSONResponse(
+                status_code=401,
+                content={"error": "unauthorized", "message": "Invalid or missing API key."},
+            )
+
+        return await call_next(request)
+
+
+app.add_middleware(A2AApiKeyMiddleware)
 
 # A2A (Agent-to-Agent Protocol) ルートを統合
 _a2a_app = create_a2a_app()
