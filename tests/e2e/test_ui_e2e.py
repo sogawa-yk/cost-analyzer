@@ -47,8 +47,8 @@ class TestLanguageSwitch:
     def test_language_toggle_exists(self, page, base_url):
         """言語切替ボタンが表示されることを確認する。"""
         page.goto(base_url)
-        # JA / EN の切替要素を探す
-        lang_switcher = page.locator("[data-lang], .lang-switch, .lang-btn").first
+        page.wait_for_selector(".lang-switcher")
+        lang_switcher = page.locator(".lang-switcher")
         assert lang_switcher.is_visible()
 
     def test_switch_to_english(self, page, base_url):
@@ -73,9 +73,8 @@ class TestConnectionStatus:
     def test_connection_indicator_visible(self, page, base_url):
         """接続状態インジケーターが表示されることを確認する。"""
         page.goto(base_url)
-        page.wait_for_timeout(1000)
-        # 接続状態を示す要素を探す
-        indicator = page.locator(".status-dot, .connection-status, [data-status]").first
+        page.wait_for_selector(".health-dot", timeout=5000)
+        indicator = page.locator(".health-dot")
         assert indicator.is_visible()
 
 
