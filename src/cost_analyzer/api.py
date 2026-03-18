@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from cost_analyzer.config import get_settings, setup_logging
@@ -26,6 +30,16 @@ def _get_oci_client():
     return _oci_client
 
 
+def _build_asset_hash() -> str:
+    """静的ファイルのハッシュからキャッシュバスティング用クエリパラメータを生成する。"""
+    static_dir = Path(__file__).resolve().parent / "static"
+    h = hashlib.md5()
+    for p in sorted(static_dir.rglob("*")):
+        if p.is_file() and not p.name.startswith("."):
+            h.update(p.read_bytes())
+    return h.hexdigest()[:8]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -34,6 +48,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="cost-analyzer", lifespan=lifespan)
+
+_BASE_DIR = Path(__file__).resolve().parent
+app.mount("/static", StaticFiles(directory=_BASE_DIR / "static"), name="static")
+_templates = Jinja2Templates(directory=_BASE_DIR / "templates")
+_asset_version = _build_asset_hash()
+
+
+@app.get("/")
+async def index(request: Request):
+    return _templates.TemplateResponse(request, "index.html", {"v": _asset_version})
 
 
 class QueryRequest(BaseModel):

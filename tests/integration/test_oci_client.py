@@ -121,8 +121,8 @@ class TestGenAIParser:
 
     def test_parse_japanese_breakdown_query(self, oci_client):
         """日本語の内訳クエリが正しくパースされることを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.models import CostQuery, QueryType
+        from cost_analyzer.parser import parse_query
 
         result = parse_query("先月のサービス別コストを教えて", oci_client)
 
@@ -134,8 +134,8 @@ class TestGenAIParser:
 
     def test_parse_english_breakdown_query(self, oci_client):
         """英語の内訳クエリが正しくパースされることを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.models import CostQuery, QueryType
+        from cost_analyzer.parser import parse_query
 
         result = parse_query("Show costs for last month", oci_client)
 
@@ -145,8 +145,8 @@ class TestGenAIParser:
 
     def test_parse_comparison_query(self, oci_client):
         """比較クエリが正しくパースされることを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.models import CostQuery, QueryType
+        from cost_analyzer.parser import parse_query
 
         result = parse_query("先月と今月のコストを比較して", oci_client)
 
@@ -157,8 +157,8 @@ class TestGenAIParser:
 
     def test_parse_service_filter_query(self, oci_client):
         """サービスフィルタ付きクエリがパースされることを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.models import CostQuery
+        from cost_analyzer.parser import parse_query
 
         result = parse_query(
             "先月のCOMPUTEサービスだけのコストをservice_filterで絞り込んで教えて", oci_client
@@ -177,10 +177,10 @@ class TestEndToEndPipeline:
 
     def test_breakdown_pipeline(self, oci_client):
         """内訳クエリの全パイプラインが動作することを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.engine import fetch_breakdown
         from cost_analyzer.formatter import format_breakdown
         from cost_analyzer.models import CostBreakdown, CostQuery, ErrorResponse
+        from cost_analyzer.parser import parse_query
 
         # Step 1: パース
         query = parse_query("先月のサービス別コストを教えて", oci_client)
@@ -203,10 +203,10 @@ class TestEndToEndPipeline:
 
     def test_comparison_pipeline(self, oci_client):
         """比較クエリの全パイプラインが動作することを確認する。"""
-        from cost_analyzer.parser import parse_query
         from cost_analyzer.engine import fetch_comparison, generate_trend_summary
         from cost_analyzer.formatter import format_comparison
         from cost_analyzer.models import CostComparison, CostQuery, ErrorResponse
+        from cost_analyzer.parser import parse_query
 
         # Step 1: パース
         query = parse_query("先月と今月のコストを比較して", oci_client)

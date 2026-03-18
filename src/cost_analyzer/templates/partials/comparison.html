@@ -1,0 +1,48 @@
+<div class="comparison-result">
+  <div class="period-label">
+    <span x-text="$store.app.result.previous_period.start"></span> 〜 <span x-text="$store.app.result.previous_period.end"></span>
+    vs
+    <span x-text="$store.app.result.current_period.start"></span> 〜 <span x-text="$store.app.result.current_period.end"></span>
+  </div>
+  <div class="table-container">
+    <table class="cost-table comparison-table">
+      <thead>
+        <tr>
+          <th x-text="$store.i18n.t('service_column')"></th>
+          <th x-text="$store.i18n.t('prev_period')"></th>
+          <th x-text="$store.i18n.t('current_period')"></th>
+          <th x-text="$store.i18n.t('change_column')"></th>
+          <th x-text="$store.i18n.t('change_rate_column')"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in $store.app.result.items" :key="item.service">
+          <tr>
+            <td x-text="item.service"></td>
+            <td class="amount" x-text="TableUtils.formatCurrency(item.previous_amount, $store.app.result.currency)"></td>
+            <td class="amount" x-text="TableUtils.formatCurrency(item.current_amount, $store.app.result.currency)"></td>
+            <td class="amount" x-bind:class="TableUtils.changeClass(item.absolute_change)"
+                x-text="TableUtils.formatChange(item.absolute_change, $store.app.result.currency)"></td>
+            <td x-bind:class="TableUtils.changeClass(item.absolute_change)"
+                x-text="TableUtils.formatChangePercent(item.percent_change)"></td>
+          </tr>
+        </template>
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td x-text="$store.i18n.t('total_label')"></td>
+          <td class="amount" x-text="TableUtils.formatCurrency($store.app.result.previous_period_total || 0, $store.app.result.currency)"></td>
+          <td class="amount" x-text="TableUtils.formatCurrency($store.app.result.current_period_total || 0, $store.app.result.currency)"></td>
+          <td class="amount" x-bind:class="TableUtils.changeClass($store.app.result.total_change)"
+              x-text="TableUtils.formatChange($store.app.result.total_change, $store.app.result.currency)"></td>
+          <td x-bind:class="TableUtils.changeClass($store.app.result.total_change)"
+              x-text="TableUtils.formatChangePercent($store.app.result.total_change_percent)"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="trend-summary" x-show="$store.app.result.summary">
+    <h4 x-text="$store.i18n.t('trend_summary_title')"></h4>
+    <p x-text="$store.app.result.summary"></p>
+  </div>
+</div>

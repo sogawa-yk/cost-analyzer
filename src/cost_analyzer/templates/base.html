@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCI コスト分析</title>
+  <link rel="stylesheet" href="/static/css/style.css?v={{ v }}">
+  <link rel="icon" href="data:,">
+</head>
+<body x-data>
+
+  <header>
+    <div class="header-inner">
+      <h1 x-text="$store.i18n.t('app_title')">OCI コスト分析</h1>
+
+      <div class="header-right">
+        <!-- 接続状態インジケーター -->
+        <span class="health-indicator">
+          <span
+            class="health-dot"
+            x-bind:class="$store.app.backendHealthy ? 'dot-green' : 'dot-red'"
+          ></span>
+          <span
+            x-text="$store.app.backendHealthy ? $store.i18n.t('status_connected') : $store.i18n.t('status_disconnected')"
+          ></span>
+        </span>
+
+        <!-- 言語切替ボタン -->
+        <div class="lang-switcher">
+          <button
+            x-on:click="$store.i18n.setLang('ja')"
+            x-bind:class="{ 'lang-active': $store.i18n.currentLang === 'ja' }"
+          >JA</button>
+          <button
+            x-on:click="$store.i18n.setLang('en')"
+            x-bind:class="{ 'lang-active': $store.i18n.currentLang === 'en' }"
+          >EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Application scripts (must load before Alpine to register alpine:init listeners) -->
+  <script src="/static/js/i18n.js?v={{ v }}" defer></script>
+  <script src="/static/js/table.js?v={{ v }}" defer></script>
+  <script src="/static/js/app.js?v={{ v }}" defer></script>
+
+  <!-- Vendor scripts (Alpine must load last so alpine:init fires after stores are registered) -->
+  <script src="/static/vendor/alpine.min.js" defer></script>
+  <script src="/static/vendor/htmx.min.js" defer></script>
+
+</body>
+</html>
