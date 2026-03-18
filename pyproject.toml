@@ -29,9 +29,10 @@ packages = ["src/cost_analyzer"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--cov=cost_analyzer --cov-report=term-missing --cov-fail-under=60 -m 'not oci'"
+addopts = "--cov=cost_analyzer --cov-report=term-missing --cov-fail-under=60 -m 'not oci and not e2e'"
 markers = [
     "oci: 実 OCI 接続が必要な統合テスト（-m oci で実行）",
+    "e2e: Playwright による E2E テスト（-m e2e で実行）",
 ]
 
 [tool.ruff]
@@ -55,4 +56,5 @@ dev = [
     "pytest-asyncio>=0.25",
     "httpx>=0.28",
     "ruff>=0.15.6",
+    "pytest-playwright>=0.6",
 ]

@@ -29,6 +29,8 @@ SYSTEM_PROMPT_TEMPLATE = """\
 6. needs_clarification: クエリが曖昧で解釈できない場合はtrue。この場合clarification_messageに確認質問を設定
 7. clarification_message: needs_clarification=true の場合に、ユーザーに聞く確認質問
 8. detected_language: クエリの言語（"ja" または "en"）
+9. 日本語と英語以外の言語の場合は needs_clarification=true にし、
+   clarification_message に「日本語または英語で入力してください」と設定
 
 ## 出力形式
 JSON形式で以下のフィールドを返してください:

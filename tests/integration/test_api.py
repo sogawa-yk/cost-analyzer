@@ -12,11 +12,14 @@ from fastapi.testclient import TestClient
 from cost_analyzer.api import app
 from cost_analyzer.models import (
     CostBreakdown,
+    CostComparison,
     CostQuery,
     ErrorResponse,
     ErrorType,
     QueryType,
     ServiceCost,
+    ServiceDelta,
+    TrendSummary,
 )
 
 
@@ -179,6 +182,76 @@ class TestQueryEndpoint:
         data = response.json()
         assert data["type"] == "clarification"
         assert "message" in data
+
+    def test_comparison_success(self, client):
+        """比較クエリが previous_period_total と current_period_total を含むことを確認する。"""
+        prev_breakdown = CostBreakdown(
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 2, 1),
+            currency="USD",
+            items=[
+                ServiceCost(service="COMPUTE", amount=Decimal("1000.00"), percentage=Decimal("100.0"), rank=1),
+            ],
+            total=Decimal("1000.00"),
+        )
+        curr_breakdown = CostBreakdown(
+            period_start=date(2026, 2, 1),
+            period_end=date(2026, 3, 1),
+            currency="USD",
+            items=[
+                ServiceCost(service="COMPUTE", amount=Decimal("1200.00"), percentage=Decimal("100.0"), rank=1),
+            ],
+            total=Decimal("1200.00"),
+        )
+        comparison = CostComparison(
+            current_period=curr_breakdown,
+            previous_period=prev_breakdown,
+            items=[
+                ServiceDelta(
+                    service="COMPUTE",
+                    current_amount=Decimal("1200.00"),
+                    previous_amount=Decimal("1000.00"),
+                    absolute_change=Decimal("200.00"),
+                    percent_change=Decimal("20.0"),
+                ),
+            ],
+            total_change=Decimal("200.00"),
+            total_change_percent=Decimal("20.0"),
+        )
+        trend = TrendSummary(
+            language="ja",
+            overall_direction="increase",
+            total_change_text="$200.00 増加",
+            top_increases=["COMPUTE +$200.00"],
+            notable_decreases=[],
+            summary_text="合計コストが $200.00 (+20.0%) 増加しました。",
+        )
+        query = CostQuery(
+            query_type=QueryType.COMPARISON,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 3, 1),
+            comparison_start_date=date(2026, 1, 1),
+            comparison_end_date=date(2026, 2, 1),
+            detected_language="ja",
+        )
+
+        with (
+            patch("cost_analyzer.api._get_oci_client") as mock_get_client,
+            patch("cost_analyzer.parser.parse_query", return_value=query),
+            patch("cost_analyzer.engine.fetch_comparison", return_value=comparison),
+            patch("cost_analyzer.engine.generate_trend_summary", return_value=trend),
+        ):
+            mock_get_client.return_value = MagicMock()
+            response = client.post("/query", json={"query": "先月と今月を比較して"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["type"] == "comparison"
+        assert data["previous_period_total"] == 1000.00
+        assert data["current_period_total"] == 1200.00
+        assert data["total_change"] == 200.00
+        assert data["total_change_percent"] == 20.0
+        assert data["summary"] == "合計コストが $200.00 (+20.0%) 増加しました。"
 
     def test_missing_query_field_returns_422(self, client):
         """必須フィールド欠落時に 422 が返ることを確認する。"""
