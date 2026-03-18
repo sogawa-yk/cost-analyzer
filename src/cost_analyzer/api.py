@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
+from cost_analyzer.a2a_server import create_a2a_app
 from cost_analyzer.config import get_settings, setup_logging
 from cost_analyzer.models import ErrorResponse, ErrorType, QueryType
 
@@ -48,6 +49,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="cost-analyzer", lifespan=lifespan)
+
+# A2A (Agent-to-Agent Protocol) ルートを統合
+_a2a_app = create_a2a_app()
+_a2a_app.add_routes_to_app(app, rpc_url="/a2a")
 
 _BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=_BASE_DIR / "static"), name="static")
