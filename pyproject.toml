@@ -14,6 +14,7 @@ dependencies = [
     "dateparser>=1.2",
     "python-dateutil>=2.9",
     "jinja2>=3.1",
+    "a2a-sdk[http-server]>=0.3.25",
 ]
 
 [project.scripts]
@@ -45,6 +46,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/cost_analyzer/models.py" = ["TCH003"]
+"src/cost_analyzer/a2a_server.py" = ["TCH003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["cost_analyzer"]
