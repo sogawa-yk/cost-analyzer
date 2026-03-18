@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cost-analyzer-ingress
+  annotations:
+    oci-native-ingress.oraclecloud.com/backend-tls-enabled: "false"
+    oci-native-ingress.oraclecloud.com/healthcheck-path: /health
+    oci-native-ingress.oraclecloud.com/healthcheck-port: "8080"
+    oci-native-ingress.oraclecloud.com/healthcheck-protocol: HTTP
+    oci-native-ingress.oraclecloud.com/https-listener-port: "443"
+spec:
+  ingressClassName: mcp-ingress-class
+  rules:
+    - host: cost.sogawa-yk.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cost-analyzer
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - cost.sogawa-yk.com
+      secretName: wildcard-tls-secret

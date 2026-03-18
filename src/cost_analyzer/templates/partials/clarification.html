@@ -1,0 +1,12 @@
+<div class="clarification-message">
+  <h3 x-text="$store.i18n.t('clarification_title')"></h3>
+  <p x-text="$store.app.clarification.message"></p>
+  <div class="suggestion-buttons" x-show="$store.app.clarification.suggestions">
+    <template x-for="suggestion in ($store.app.clarification.suggestions || [])" :key="suggestion">
+      <button class="suggestion-btn"
+              x-text="suggestion"
+              @click="$store.app.queryText = suggestion; $store.app.clarification = null; $store.app.submitQuery()">
+      </button>
+    </template>
+  </div>
+</div>

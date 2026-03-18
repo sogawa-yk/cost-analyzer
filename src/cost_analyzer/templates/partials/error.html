@@ -1,0 +1,17 @@
+<div class="error-message">
+  <h3>✕ <span x-text="$store.app.error.message"></span></h3>
+  <p x-show="$store.app.error.guidance" x-text="$store.app.error.guidance"></p>
+  <div x-show="$store.app.error.example_queries" class="example-queries">
+    <template x-for="example in ($store.app.error.example_queries || [])" :key="example">
+      <button class="suggestion-btn"
+              x-text="example"
+              @click="$store.app.queryText = example; $store.app.error = null; $store.app.submitQuery()">
+      </button>
+    </template>
+  </div>
+  <button x-show="$store.app.error.error === 'api_error' || $store.app.error.error === 'network'"
+          class="retry-btn"
+          x-text="$store.i18n.t('error_retry')"
+          @click="$store.app.error = null; $store.app.submitQuery()">
+  </button>
+</div>
