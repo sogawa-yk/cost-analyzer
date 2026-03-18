@@ -164,6 +164,8 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
             }
             for item in data.items
         ],
+        "previous_period_total": float(data.previous_period.total),
+        "current_period_total": float(data.current_period.total),
         "total_change": float(data.total_change),
         "total_change_percent": float(data.total_change_percent),
         "summary": trend.summary_text,
