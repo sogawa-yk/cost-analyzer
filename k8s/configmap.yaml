@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-analyzer-config
+data:
+  OCI_AUTH_TYPE: "api_key"
+  OCI_CONFIG_FILE: "/home/app/.oci/config"
+  OCI_HOME_REGION: "us-ashburn-1"
+  OCI_COMPARTMENT_ID: "ocid1.compartment.oc1..aaaaaaaanxm4oucgt5pkgd7sw2vouvckvvxan7ca2lirowaao7krnzlkdkhq"
+  OCI_GENAI_ENDPOINT: "https://inference.generativeai.ap-osaka-1.oci.oraclecloud.com"
+  OCI_GENAI_MODEL: "google.gemini-2.5-flash"
+  LOG_LEVEL: "INFO"

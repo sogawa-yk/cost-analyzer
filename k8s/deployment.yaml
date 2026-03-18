@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cost-analyzer
+  labels:
+    app: cost-analyzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cost-analyzer
+  template:
+    metadata:
+      labels:
+        app: cost-analyzer
+    spec:
+      containers:
+        - name: cost-analyzer
+          image: yyz.ocir.io/orasejapan/cost-analyzer:latest
+          imagePullPolicy: Always
+          args: ["serve"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: cost-analyzer-config
+          volumeMounts:
+            - name: oci-config
+              mountPath: /home/app/.oci
+              readOnly: true
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: oci-config
+          secret:
+            secretName: oci-api-key
+            items:
+              - key: config
+                path: config
+              - key: oci_api_key.pem
+                path: oci_api_key.pem
+      nodeSelector:
+        kubernetes.io/hostname: "10.0.10.92"
+      imagePullSecrets:
+        - name: ocir
