@@ -23,11 +23,11 @@ class TestUIRoutes:
         assert "text/html" in response.headers["content-type"]
 
     def test_index_contains_query_input(self, client):
-        """トップページにクエリ入力欄が含まれることを確認する。"""
+        """トップページにチャット入力欄が含まれることを確認する。"""
         response = client.get("/")
         html = response.text
-        assert "query-input" in html
-        assert "submit-btn" in html
+        assert "chat-input" in html
+        assert "chat-send-btn" in html
 
     def test_index_loads_alpine_js(self, client):
         """Alpine.js が読み込まれることを確認する。"""

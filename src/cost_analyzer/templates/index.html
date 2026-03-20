@@ -1,53 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<div x-data>
-  <!-- クエリ入力エリア -->
-  <div class="query-area">
-    <form @submit.prevent="$store.app.submitQuery()">
-      <div class="query-input-group">
+<div x-data class="chat-container">
+  <!-- 会話エリア -->
+  <div id="chat-messages" class="chat-messages">
+    <template x-for="msg in $store.app.messages" :key="msg.id">
+      {% include "partials/chat-message.html" %}
+    </template>
+
+    <!-- ローディングインジケーター -->
+    <div x-show="$store.app.loading" class="chat-bubble assistant-bubble typing-bubble">
+      <div class="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 入力エリア（固定） -->
+  <div class="chat-input-area">
+    <div class="chat-input-row">
+      <form @submit.prevent="$store.app.submitQuery()" class="chat-form">
         <input type="text"
                x-model="$store.app.queryText"
                x-bind:placeholder="$store.i18n.t('query_placeholder')"
                maxlength="1000"
-               class="query-input"
+               class="chat-input"
                x-bind:disabled="$store.app.loading">
         <button type="submit"
-                class="submit-btn"
-                x-bind:disabled="!$store.app.queryText.trim() || $store.app.loading">
-          <span x-show="!$store.app.loading" x-text="$store.i18n.t('submit_button')"></span>
-          <span x-show="$store.app.loading" class="spinner"></span>
-          <span x-show="$store.app.loading" x-text="$store.i18n.t('loading_message')"></span>
+                class="chat-send-btn"
+                x-bind:disabled="!$store.app.queryText.trim() || $store.app.loading"
+                x-text="$store.i18n.t('submit_button')">
         </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- 結果表示エリア -->
-  <div class="result-area">
-    <!-- ローディング -->
-    <div x-show="$store.app.loading" class="loading-overlay">
-      <div class="spinner-large"></div>
+      </form>
+      <button class="clear-btn"
+              @click="$store.app.clearMessages()"
+              x-text="$store.i18n.t('clear_conversation')"
+              x-bind:disabled="$store.app.loading">
+      </button>
     </div>
-
-    <!-- 内訳テーブル -->
-    <template x-if="$store.app.result && $store.app.result.type === 'breakdown'">
-      {% include "partials/breakdown.html" %}
-    </template>
-
-    <!-- 比較テーブル -->
-    <template x-if="$store.app.result && $store.app.result.type === 'comparison'">
-      {% include "partials/comparison.html" %}
-    </template>
-
-    <!-- 確認メッセージ -->
-    <template x-if="$store.app.clarification">
-      {% include "partials/clarification.html" %}
-    </template>
-
-    <!-- エラー -->
-    <template x-if="$store.app.error">
-      {% include "partials/error.html" %}
-    </template>
   </div>
 </div>
 {% endblock %}

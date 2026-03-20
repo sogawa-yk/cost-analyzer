@@ -1,0 +1,17 @@
+<div class="welcome-content">
+  <p class="welcome-text" x-text="$store.i18n.t('welcome_message')"></p>
+  <div class="suggestion-chips">
+    <button class="suggestion-chip"
+            x-text="$store.i18n.t('welcome_suggestion_1')"
+            @click="$store.app.useSuggestion($store.i18n.t('welcome_suggestion_1'))">
+    </button>
+    <button class="suggestion-chip"
+            x-text="$store.i18n.t('welcome_suggestion_2')"
+            @click="$store.app.useSuggestion($store.i18n.t('welcome_suggestion_2'))">
+    </button>
+    <button class="suggestion-chip"
+            x-text="$store.i18n.t('welcome_suggestion_3')"
+            @click="$store.app.useSuggestion($store.i18n.t('welcome_suggestion_3'))">
+    </button>
+  </div>
+</div>

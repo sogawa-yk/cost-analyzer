@@ -7,8 +7,11 @@ from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
 from difflib import get_close_matches
 
-from cost_analyzer.config import map_oci_error
+from oci.generative_ai_inference import models as genai_models
+
+from cost_analyzer.config import get_settings, map_oci_error
 from cost_analyzer.models import (
+    ConversationalResponse,
     CostBreakdown,
     CostComparison,
     CostQuery,
@@ -20,6 +23,91 @@ from cost_analyzer.models import (
 )
 
 logger = logging.getLogger("cost_analyzer.engine")
+
+# ---------------------------------------------------------------------------
+# 対話応答生成
+# ---------------------------------------------------------------------------
+
+CONVERSATIONAL_PROMPT_TEMPLATE = """\
+あなたはフレンドリーなOCIコスト分析アシスタントです。\
+以下のコストデータの分析結果を、ユーザーに対する自然な対話文として要約してください。
+
+## ルール
+1. {language}で回答してください
+2. 200文字以内で簡潔にまとめてください
+3. テーブルに表示されるデータの単純な繰り返しは避けてください
+4. 最も注目すべきポイント（最大コストのサービス、大きな変化など）に焦点を当ててください
+5. フレンドリーで分析的なトーンで書いてください
+6. 数値には通貨記号と適切なフォーマットを使用してください
+
+## データ
+結果タイプ: {result_type}
+{data_json}
+"""
+
+
+def generate_conversational_response(
+    result_type: str,
+    data_json: str,
+    language: str,
+    oci_client,
+) -> ConversationalResponse | None:
+    """LLM を使ってデータ結果から対話的な応答文を生成する。
+
+    Args:
+        result_type: "breakdown" or "comparison".
+        data_json: 結果データの JSON 文字列.
+        language: 出力言語 ("ja" or "en").
+        oci_client: OCIClient インスタンス.
+
+    Returns:
+        ConversationalResponse on success, None on failure.
+    """
+    settings = get_settings()
+    lang_label = "日本語" if language == "ja" else "English"
+
+    prompt = CONVERSATIONAL_PROMPT_TEMPLATE.format(
+        language=lang_label,
+        result_type=result_type,
+        data_json=data_json,
+    )
+
+    try:
+        chat_request = genai_models.GenericChatRequest(
+            messages=[
+                genai_models.UserMessage(
+                    content=[genai_models.TextContent(text=prompt)]
+                ),
+            ],
+            temperature=0.7,
+            max_tokens=256,
+        )
+
+        chat_detail = genai_models.ChatDetails(
+            chat_request=chat_request,
+            compartment_id=oci_client.compartment_id,
+            serving_mode=genai_models.OnDemandServingMode(
+                model_id=settings.oci_genai_model,
+            ),
+        )
+
+        response = oci_client.genai_client.chat(chat_detail)
+        text = response.data.chat_response.choices[0].message.content[0].text
+        text = text.strip()
+
+        logger.info(
+            "Conversational response generated",
+            extra={"extra_data": {"text_length": len(text)}},
+        )
+
+        return ConversationalResponse(text=text, language=language)
+
+    except Exception:
+        logger.warning(
+            "Failed to generate conversational response, falling back to null",
+            exc_info=True,
+        )
+        return None
 
 
 def _get_scope_suggestions(oci_client, query: CostQuery) -> list[str]:

@@ -1,11 +1,10 @@
-<div class="clarification-message">
-  <h3 x-text="$store.i18n.t('clarification_title')"></h3>
-  <p x-text="$store.app.clarification.message"></p>
-  <div class="suggestion-buttons" x-show="$store.app.clarification.suggestions">
-    <template x-for="suggestion in ($store.app.clarification.suggestions || [])" :key="suggestion">
-      <button class="suggestion-btn"
+<div class="clarification-content">
+  <p class="clarification-text" x-text="msg.text"></p>
+  <div class="suggestion-chips" x-show="msg.data.suggestions && msg.data.suggestions.length">
+    <template x-for="suggestion in (msg.data.suggestions || [])" :key="suggestion">
+      <button class="suggestion-chip"
               x-text="suggestion"
-              @click="$store.app.queryText = suggestion; $store.app.clarification = null; $store.app.submitQuery()">
+              @click="$store.app.useSuggestion(suggestion)">
       </button>
     </template>
   </div>
