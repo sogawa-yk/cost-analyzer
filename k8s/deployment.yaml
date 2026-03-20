@@ -28,7 +28,7 @@ spec:
             - name: A2A_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: cost-analyzer-a2a-auth
+                  name: mini-a2a-auth
                   key: api-key
           volumeMounts:
             - name: oci-config

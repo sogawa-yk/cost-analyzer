@@ -188,3 +188,114 @@ class TestParseQuery:
         assert not isinstance(result, ErrorResponse)
         assert result.query_type == QueryType.COMPARISON
         assert result.comparison_start_date == date(2026, 1, 1)
+
+    def test_comparison_fallback_infers_previous_period(self):
+        """LLM が比較日付を省略した場合、前期間が自動推定される。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "comparison",
+            "start_date": "2026-03-01",
+            "end_date": "2026-04-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": None,
+            "compartment_filter": None,
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("先月と今月のコストを比較して", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.query_type == QueryType.COMPARISON
+        assert result.comparison_start_date == date(2026, 2, 1)
+        assert result.comparison_end_date == date(2026, 3, 1)
+
+    def test_comparison_with_explicit_dates_preserved(self):
+        """LLM が比較日付を正しく返した場合、そのまま使用される。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "comparison",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": "2026-01-01",
+            "comparison_end_date": "2026-02-01",
+            "service_filter": None,
+            "compartment_filter": None,
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "en",
+        })
+
+        result = parse_query("Compare January and February 2026", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.comparison_start_date == date(2026, 1, 1)
+        assert result.comparison_end_date == date(2026, 2, 1)
+
+    def test_invalid_dates_return_parse_error(self):
+        """start_date >= end_date の場合、api_error ではなく parse_error が返る。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-03-20",
+            "end_date": "2026-03-01",
+            "needs_clarification": False,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("今日の天気は？", mock_client)
+
+        assert isinstance(result, ErrorResponse)
+        assert result.error_type == ErrorType.PARSE_ERROR
+        assert result.example_queries is not None
+
+    def test_none_dates_return_parse_error(self):
+        """日付が None の場合、api_error ではなく parse_error が返る。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": None,
+            "end_date": None,
+            "needs_clarification": False,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("コストを教えて", mock_client)
+
+        assert isinstance(result, ErrorResponse)
+        assert result.error_type == ErrorType.PARSE_ERROR
+        assert result.example_queries is not None
+
+    def test_validation_error_returns_parse_error(self):
+        """Pydantic ValidationError が parse_error として返される。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-03-01",
+            "end_date": "2026-04-01",
+            "needs_clarification": False,
+            "detected_language": "xx",
+        })
+
+        result = parse_query("Hello, what can you do?", mock_client)
+
+        assert isinstance(result, ErrorResponse)
+        assert result.error_type == ErrorType.PARSE_ERROR
+        assert result.example_queries is not None
+
+    def test_service_filter_object_storage_preserved(self):
+        """service_filter が CostQuery に正しく設定される。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": "OBJECT_STORAGE",
+            "compartment_filter": None,
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("先月のObject Storageのコストは？", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.service_filter == "OBJECT_STORAGE"
