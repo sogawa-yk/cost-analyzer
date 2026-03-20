@@ -19,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from cost_analyzer.a2a_server import create_a2a_app
 from cost_analyzer.config import get_settings, setup_logging
-from cost_analyzer.models import ErrorResponse, ErrorType, QueryType
+from cost_analyzer.models import GROUP_BY_SERVICE, ErrorResponse, ErrorType, QueryType
 
 logger = logging.getLogger("cost_analyzer.api")
 
@@ -166,13 +166,16 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
             status = ERROR_STATUS_CODES.get(data.error_type, 502)
             return JSONResponse(status_code=status, content=_build_error_body(data))
 
+        group_by = result.group_by
         breakdown_body = {
             "type": "breakdown",
+            "group_by": group_by,
             "period": {"start": str(data.period_start), "end": str(data.period_end)},
             "currency": data.currency,
             "items": [
                 {
-                    "service": item.service,
+                    "group_key": item.group_key,
+                    **({"service": item.group_key} if group_by == GROUP_BY_SERVICE else {}),
                     "amount": float(item.amount),
                     "percentage": float(item.percentage),
                     "rank": item.rank,
@@ -197,8 +200,10 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
         return JSONResponse(status_code=status, content=_build_error_body(data))
 
     trend = generate_trend_summary(data, result.detected_language)
+    group_by = result.group_by
     comparison_body = {
         "type": "comparison",
+        "group_by": group_by,
         "current_period": {
             "start": str(data.current_period.period_start),
             "end": str(data.current_period.period_end),
@@ -210,7 +215,8 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
         "currency": data.current_period.currency,
         "items": [
             {
-                "service": item.service,
+                "group_key": item.group_key,
+                **({"service": item.group_key} if group_by == GROUP_BY_SERVICE else {}),
                 "current_amount": float(item.current_amount),
                 "previous_amount": float(item.previous_amount),
                 "absolute_change": float(item.absolute_change),

@@ -299,3 +299,86 @@ class TestParseQuery:
 
         assert not isinstance(result, ErrorResponse)
         assert result.service_filter == "OBJECT_STORAGE"
+
+    def test_group_by_compartment_parsed(self):
+        """「コンパートメント別」で group_by="compartment" が設定される。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": None,
+            "compartment_filter": None,
+            "group_by": "compartment",
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("コンパートメント別のコストを教えて", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.group_by == "compartment"
+
+    def test_group_by_defaults_to_service(self):
+        """集計軸未指定時はデフォルトで group_by="service" になる。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": None,
+            "compartment_filter": None,
+            "group_by": "service",
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("今月のコストを教えて", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.group_by == "service"
+
+    def test_group_by_missing_defaults_to_service(self):
+        """LLM が group_by を返さない場合、デフォルト service になる。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": None,
+            "compartment_filter": None,
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("先月のコストを教えて", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.group_by == "service"
+
+    def test_invalid_group_by_falls_back_to_service(self):
+        """不正な group_by 値はデフォルト service にフォールバックする。"""
+        mock_client = _make_mock_oci_client({
+            "query_type": "breakdown",
+            "start_date": "2026-02-01",
+            "end_date": "2026-03-01",
+            "comparison_start_date": None,
+            "comparison_end_date": None,
+            "service_filter": None,
+            "compartment_filter": None,
+            "group_by": "region",
+            "needs_clarification": False,
+            "clarification_message": None,
+            "detected_language": "ja",
+        })
+
+        result = parse_query("リージョン別のコストを教えて", mock_client)
+
+        assert not isinstance(result, ErrorResponse)
+        assert result.group_by == "service"

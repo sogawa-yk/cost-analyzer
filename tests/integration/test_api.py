@@ -49,7 +49,7 @@ class TestQueryEndpoint:
             currency="USD",
             items=[
                 ServiceCost(
-                    service="COMPUTE",
+                    group_key="COMPUTE",
                     amount=Decimal("1234.56"),
                     percentage=Decimal("100.0"),
                     rank=1,
@@ -190,7 +190,7 @@ class TestQueryEndpoint:
             period_end=date(2026, 2, 1),
             currency="USD",
             items=[
-                ServiceCost(service="COMPUTE", amount=Decimal("1000.00"), percentage=Decimal("100.0"), rank=1),
+                ServiceCost(group_key="COMPUTE", amount=Decimal("1000.00"), percentage=Decimal("100.0"), rank=1),
             ],
             total=Decimal("1000.00"),
         )
@@ -199,7 +199,7 @@ class TestQueryEndpoint:
             period_end=date(2026, 3, 1),
             currency="USD",
             items=[
-                ServiceCost(service="COMPUTE", amount=Decimal("1200.00"), percentage=Decimal("100.0"), rank=1),
+                ServiceCost(group_key="COMPUTE", amount=Decimal("1200.00"), percentage=Decimal("100.0"), rank=1),
             ],
             total=Decimal("1200.00"),
         )
@@ -208,7 +208,7 @@ class TestQueryEndpoint:
             previous_period=prev_breakdown,
             items=[
                 ServiceDelta(
-                    service="COMPUTE",
+                    group_key="COMPUTE",
                     current_amount=Decimal("1200.00"),
                     previous_amount=Decimal("1000.00"),
                     absolute_change=Decimal("200.00"),
@@ -267,7 +267,7 @@ class TestQueryEndpoint:
             currency="USD",
             items=[
                 ServiceCost(
-                    service="COMPUTE",
+                    group_key="COMPUTE",
                     amount=Decimal("500.00"),
                     percentage=Decimal("100.0"),
                     rank=1,

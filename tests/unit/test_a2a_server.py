@@ -167,7 +167,7 @@ class TestBreakdownToResponse:
             period_end=date(2026, 3, 1),
             currency="USD",
             items=[
-                ServiceCost(service="COMPUTE", amount=Decimal("1234.56"), percentage=Decimal("100.0"), rank=1),
+                ServiceCost(group_key="COMPUTE", amount=Decimal("1234.56"), percentage=Decimal("100.0"), rank=1),
             ],
             total=Decimal("1234.56"),
         )
@@ -197,14 +197,14 @@ class TestComparisonToResponse:
             period_start=date(2026, 2, 1),
             period_end=date(2026, 3, 1),
             currency="USD",
-            items=[ServiceCost(service="COMPUTE", amount=Decimal("1500"), percentage=Decimal("100"), rank=1)],
+            items=[ServiceCost(group_key="COMPUTE", amount=Decimal("1500"), percentage=Decimal("100"), rank=1)],
             total=Decimal("1500"),
         )
         previous = CostBreakdown(
             period_start=date(2026, 1, 1),
             period_end=date(2026, 2, 1),
             currency="USD",
-            items=[ServiceCost(service="COMPUTE", amount=Decimal("1000"), percentage=Decimal("100"), rank=1)],
+            items=[ServiceCost(group_key="COMPUTE", amount=Decimal("1000"), percentage=Decimal("100"), rank=1)],
             total=Decimal("1000"),
         )
         comparison = CostComparison(
@@ -212,7 +212,7 @@ class TestComparisonToResponse:
             previous_period=previous,
             items=[
                 ServiceDelta(
-                    service="COMPUTE",
+                    group_key="COMPUTE",
                     current_amount=Decimal("1500"),
                     previous_amount=Decimal("1000"),
                     absolute_change=Decimal("500"),

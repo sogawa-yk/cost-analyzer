@@ -114,6 +114,7 @@ class OCIClient:
         filter: Filter | None = None,
         service_filter: str | None = None,
         compartment_filter: str | None = None,
+        api_group_by: list[str] | None = None,
     ) -> list[CostLineItem]:
         """Fetch cost data from OCI Usage API.
 
@@ -132,14 +133,18 @@ class OCIClient:
         if filter is None:
             filter = self.build_filter(service_filter, compartment_filter)
 
+        effective_group_by = api_group_by or ["service", "currency"]
         details = oci.usage_api.models.RequestSummarizedUsagesDetails(
             tenant_id=self._tenancy_id,
             time_usage_started=datetime.combine(start_date, datetime.min.time()),
             time_usage_ended=datetime.combine(end_date, datetime.min.time()),
             granularity=granularity,
             query_type="COST",
-            group_by=["service", "currency"],
+            group_by=effective_group_by,
         )
+        # compartmentName でグルーピングする場合は compartment_depth が必須
+        if "compartmentName" in effective_group_by:
+            details.compartment_depth = 6
         if filter is not None:
             details.filter = filter
 
