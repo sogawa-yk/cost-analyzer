@@ -182,7 +182,7 @@ class TestFetchComparison:
 
         client = MagicMock()
 
-        def side_effect(start_date, end_date, service_filter=None, compartment_filter=None):
+        def side_effect(start_date, end_date, service_filter=None, compartment_filter=None, api_group_by=None):
             if start_date == date(2026, 2, 1):
                 return current_items
             else:
@@ -322,7 +322,7 @@ class TestGenerateTrendSummary:
             ac = c - p
             pc = (ac / p * 100).quantize(Decimal("0.1")) if p != Decimal("0") else None
             deltas.append(ServiceDelta(
-                service=svc, current_amount=c, previous_amount=p,
+                group_key=svc, current_amount=c, previous_amount=p,
                 absolute_change=ac, percent_change=pc,
             ))
         deltas.sort(key=lambda d: abs(d.absolute_change), reverse=True)
@@ -339,18 +339,18 @@ class TestGenerateTrendSummary:
         from cost_analyzer.engine import generate_trend_summary
 
         current_items = [
-            ServiceCost(service="A", amount=Decimal("500"), percentage=Decimal("25.0"), rank=1),
-            ServiceCost(service="B", amount=Decimal("400"), percentage=Decimal("20.0"), rank=2),
-            ServiceCost(service="C", amount=Decimal("300"), percentage=Decimal("15.0"), rank=3),
-            ServiceCost(service="D", amount=Decimal("200"), percentage=Decimal("10.0"), rank=4),
-            ServiceCost(service="E", amount=Decimal("100"), percentage=Decimal("5.0"), rank=5),
+            ServiceCost(group_key="A", amount=Decimal("500"), percentage=Decimal("25.0"), rank=1),
+            ServiceCost(group_key="B", amount=Decimal("400"), percentage=Decimal("20.0"), rank=2),
+            ServiceCost(group_key="C", amount=Decimal("300"), percentage=Decimal("15.0"), rank=3),
+            ServiceCost(group_key="D", amount=Decimal("200"), percentage=Decimal("10.0"), rank=4),
+            ServiceCost(group_key="E", amount=Decimal("100"), percentage=Decimal("5.0"), rank=5),
         ]
         previous_items = [
-            ServiceCost(service="A", amount=Decimal("100"), percentage=Decimal("10.0"), rank=1),
-            ServiceCost(service="B", amount=Decimal("100"), percentage=Decimal("10.0"), rank=2),
-            ServiceCost(service="C", amount=Decimal("100"), percentage=Decimal("10.0"), rank=3),
-            ServiceCost(service="D", amount=Decimal("100"), percentage=Decimal("10.0"), rank=4),
-            ServiceCost(service="E", amount=Decimal("200"), percentage=Decimal("20.0"), rank=5),
+            ServiceCost(group_key="A", amount=Decimal("100"), percentage=Decimal("10.0"), rank=1),
+            ServiceCost(group_key="B", amount=Decimal("100"), percentage=Decimal("10.0"), rank=2),
+            ServiceCost(group_key="C", amount=Decimal("100"), percentage=Decimal("10.0"), rank=3),
+            ServiceCost(group_key="D", amount=Decimal("100"), percentage=Decimal("10.0"), rank=4),
+            ServiceCost(group_key="E", amount=Decimal("200"), percentage=Decimal("20.0"), rank=5),
         ]
 
         comparison = self._make_comparison(
@@ -370,12 +370,12 @@ class TestGenerateTrendSummary:
         from cost_analyzer.engine import generate_trend_summary
 
         current_items = [
-            ServiceCost(service="Compute", amount=Decimal("1200"), percentage=Decimal("70.6"), rank=1),
-            ServiceCost(service="Storage", amount=Decimal("500"), percentage=Decimal("29.4"), rank=2),
+            ServiceCost(group_key="Compute", amount=Decimal("1200"), percentage=Decimal("70.6"), rank=1),
+            ServiceCost(group_key="Storage", amount=Decimal("500"), percentage=Decimal("29.4"), rank=2),
         ]
         previous_items = [
-            ServiceCost(service="Compute", amount=Decimal("1000"), percentage=Decimal("62.5"), rank=1),
-            ServiceCost(service="Storage", amount=Decimal("600"), percentage=Decimal("37.5"), rank=2),
+            ServiceCost(group_key="Compute", amount=Decimal("1000"), percentage=Decimal("62.5"), rank=1),
+            ServiceCost(group_key="Storage", amount=Decimal("600"), percentage=Decimal("37.5"), rank=2),
         ]
 
         comparison = self._make_comparison(
@@ -393,12 +393,12 @@ class TestGenerateTrendSummary:
         from cost_analyzer.engine import generate_trend_summary
 
         current_items = [
-            ServiceCost(service="Compute", amount=Decimal("1200"), percentage=Decimal("70.6"), rank=1),
-            ServiceCost(service="Storage", amount=Decimal("500"), percentage=Decimal("29.4"), rank=2),
+            ServiceCost(group_key="Compute", amount=Decimal("1200"), percentage=Decimal("70.6"), rank=1),
+            ServiceCost(group_key="Storage", amount=Decimal("500"), percentage=Decimal("29.4"), rank=2),
         ]
         previous_items = [
-            ServiceCost(service="Compute", amount=Decimal("1000"), percentage=Decimal("62.5"), rank=1),
-            ServiceCost(service="Storage", amount=Decimal("600"), percentage=Decimal("37.5"), rank=2),
+            ServiceCost(group_key="Compute", amount=Decimal("1000"), percentage=Decimal("62.5"), rank=1),
+            ServiceCost(group_key="Storage", amount=Decimal("600"), percentage=Decimal("37.5"), rank=2),
         ]
 
         comparison = self._make_comparison(
@@ -439,6 +439,7 @@ class TestScopedQueries:
             end_date=query.end_date,
             service_filter="COMPUTE",
             compartment_filter=None,
+            api_group_by=["service", "currency"],
         )
 
     def test_fetch_breakdown_with_compartment_filter(self):
@@ -460,6 +461,7 @@ class TestScopedQueries:
             end_date=query.end_date,
             service_filter=None,
             compartment_filter="production",
+            api_group_by=["service", "currency"],
         )
 
     def test_scope_not_found_returns_suggestions(self):
@@ -491,3 +493,114 @@ class TestScopedQueries:
         # 類似サービス名が提案に含まれていることを検証
         assert "COMPUTE" in result.guidance
         client.get_available_services.assert_called_once()
+
+
+class TestCompartmentGroupBy:
+    """コンパートメント別集計（group_by=compartment）のテスト。"""
+
+    def _make_query(self, **kwargs):
+        from tests.conftest import make_cost_query
+        return make_cost_query(**kwargs)
+
+    def _make_client(self, items):
+        client = MagicMock()
+        client.request_cost_data.return_value = items
+        return client
+
+    def test_fetch_breakdown_groups_by_compartment(self):
+        """group_by=compartment でコンパートメント名をキーに集計される。"""
+        from cost_analyzer.engine import fetch_breakdown
+        from tests.conftest import make_cost_line_item
+
+        items = [
+            make_cost_line_item(service="COMPUTE", amount=Decimal("500"), compartment_name="prod", compartment_path="/root/prod"),
+            make_cost_line_item(service="COMPUTE", amount=Decimal("300"), compartment_name="dev", compartment_path="/root/dev"),
+            make_cost_line_item(service="STORAGE", amount=Decimal("200"), compartment_name="prod", compartment_path="/root/prod"),
+        ]
+        query = self._make_query(group_by="compartment")
+        client = self._make_client(items)
+
+        result = fetch_breakdown(query, client)
+
+        assert isinstance(result, CostBreakdown)
+        assert len(result.items) == 2
+        # prod: 500+200=700, dev: 300
+        assert result.items[0].group_key == "prod"
+        assert result.items[0].amount == Decimal("700")
+        assert result.items[1].group_key == "dev"
+        assert result.items[1].amount == Decimal("300")
+
+    def test_fetch_breakdown_passes_compartment_group_by_to_oci(self):
+        """group_by=compartment 時に OCI API へ compartmentName を渡す。"""
+        from cost_analyzer.engine import fetch_breakdown
+        from tests.conftest import make_cost_line_item
+
+        items = [make_cost_line_item(service="COMPUTE", amount=Decimal("100"), compartment_name="prod")]
+        client = self._make_client(items)
+        query = self._make_query(group_by="compartment")
+
+        fetch_breakdown(query, client)
+
+        client.request_cost_data.assert_called_once_with(
+            start_date=query.start_date,
+            end_date=query.end_date,
+            service_filter=None,
+            compartment_filter=None,
+            api_group_by=["compartmentName", "currency"],
+        )
+
+    def test_fetch_comparison_groups_by_compartment(self):
+        """group_by=compartment での比較が正しく動作する。"""
+        from cost_analyzer.engine import fetch_comparison
+        from tests.conftest import make_cost_line_item
+
+        current = [
+            make_cost_line_item(service="COMPUTE", amount=Decimal("700"), compartment_name="prod"),
+            make_cost_line_item(service="COMPUTE", amount=Decimal("300"), compartment_name="dev"),
+        ]
+        previous = [
+            make_cost_line_item(service="COMPUTE", amount=Decimal("500"), compartment_name="prod"),
+            make_cost_line_item(service="COMPUTE", amount=Decimal("200"), compartment_name="dev"),
+        ]
+        client = MagicMock()
+
+        def side_effect(start_date, end_date, service_filter=None, compartment_filter=None, api_group_by=None):
+            from datetime import date as d
+            if start_date == d(2026, 2, 1):
+                return current
+            return previous
+
+        client.request_cost_data.side_effect = side_effect
+
+        query = self._make_query(
+            query_type="comparison",
+            group_by="compartment",
+            comparison_start_date=date(2026, 1, 1),
+            comparison_end_date=date(2026, 2, 1),
+        )
+
+        result = fetch_comparison(query, client)
+
+        assert isinstance(result, CostComparison)
+        prod_delta = next(d for d in result.items if d.group_key == "prod")
+        assert prod_delta.absolute_change == Decimal("200")
+        dev_delta = next(d for d in result.items if d.group_key == "dev")
+        assert dev_delta.absolute_change == Decimal("100")
+
+    def test_fetch_breakdown_default_service_groupby(self):
+        """group_by 未指定（デフォルト service）で従来通りサービス別に集計される。"""
+        from cost_analyzer.engine import fetch_breakdown
+        from tests.conftest import make_cost_line_item
+
+        items = [
+            make_cost_line_item(service="COMPUTE", amount=Decimal("500"), compartment_name="prod"),
+            make_cost_line_item(service="STORAGE", amount=Decimal("300"), compartment_name="prod"),
+        ]
+        query = self._make_query()  # default group_by="service"
+        client = self._make_client(items)
+
+        result = fetch_breakdown(query, client)
+
+        assert isinstance(result, CostBreakdown)
+        assert result.items[0].group_key == "COMPUTE"
+        assert result.items[1].group_key == "STORAGE"

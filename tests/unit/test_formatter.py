@@ -28,8 +28,8 @@ class TestFormatBreakdown:
             period_end=date(2026, 3, 1),
             currency="USD",
             items=[
-                ServiceCost(service="Compute", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
-                ServiceCost(service="Object Storage", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
+                ServiceCost(group_key="Compute", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
+                ServiceCost(group_key="Object Storage", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
             ],
             total=Decimal("1913.46"),
         )
@@ -127,8 +127,8 @@ class TestFormatComparison:
             period_end=date(2026, 3, 1),
             currency="USD",
             items=[
-                ServiceCost(service="Compute", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
-                ServiceCost(service="Object Storage", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
+                ServiceCost(group_key="Compute", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
+                ServiceCost(group_key="Object Storage", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
             ],
             total=Decimal("1913.46"),
         )
@@ -137,8 +137,8 @@ class TestFormatComparison:
             period_end=date(2026, 2, 1),
             currency="USD",
             items=[
-                ServiceCost(service="Compute", amount=Decimal("1100.00"), percentage=Decimal("61.1"), rank=1),
-                ServiceCost(service="Object Storage", amount=Decimal("700.00"), percentage=Decimal("38.9"), rank=2),
+                ServiceCost(group_key="Compute", amount=Decimal("1100.00"), percentage=Decimal("61.1"), rank=1),
+                ServiceCost(group_key="Object Storage", amount=Decimal("700.00"), percentage=Decimal("38.9"), rank=2),
             ],
             total=Decimal("1800.00"),
         )
@@ -147,14 +147,14 @@ class TestFormatComparison:
             previous_period=previous,
             items=[
                 ServiceDelta(
-                    service="Compute",
+                    group_key="Compute",
                     current_amount=Decimal("1234.56"),
                     previous_amount=Decimal("1100.00"),
                     absolute_change=Decimal("134.56"),
                     percent_change=Decimal("12.2"),
                 ),
                 ServiceDelta(
-                    service="Object Storage",
+                    group_key="Object Storage",
                     current_amount=Decimal("678.90"),
                     previous_amount=Decimal("700.00"),
                     absolute_change=Decimal("-21.10"),

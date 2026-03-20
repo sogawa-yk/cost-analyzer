@@ -11,7 +11,14 @@ from oci.generative_ai_inference import models as genai_models
 from pydantic import ValidationError
 
 from cost_analyzer.config import get_settings
-from cost_analyzer.models import CostQuery, ErrorResponse, ErrorType, QueryType
+from cost_analyzer.models import (
+    GROUP_BY_SERVICE,
+    VALID_GROUP_BY_VALUES,
+    CostQuery,
+    ErrorResponse,
+    ErrorType,
+    QueryType,
+)
 
 logger = logging.getLogger("cost_analyzer.parser")
 
@@ -33,13 +40,18 @@ CONTAINER_ENGINE, LOAD_BALANCER, API_GATEWAY, LOGGING, MONITORING, VAULT, BASTIO
 DATA_SCIENCE, INTEGRATION, ANALYTICS, STREAMING, EMAIL_DELIVERY, DNS, WAF
    ユーザーが「Object Storage」と言えば "OBJECT_STORAGE"、「Database」と言えば "DATABASE" に変換
 5. compartment_filter: 特定のコンパートメントが指定された場合
-6. needs_clarification: クエリが曖昧で解釈できない場合、**またはコストに無関係な入力の場合**はtrue。\
+6. group_by: コスト集計の軸を指定する。デフォルトは "service"（サービス別集計）。\
+ユーザーが「コンパートメント別」「コンパートメントごと」「部門別」「組織別」等と言った場合は "compartment" を設定。\
+「サービス別」「サービスごと」と言った場合、または集計軸の指定がない場合は "service" を設定。\
+注意: compartment_filter（特定コンパートメントでの絞り込み）と group_by（集計軸の変更）は独立した概念。\
+例: 「prodコンパートメントのサービス別コスト」→ compartment_filter="prod", group_by="service"
+7. needs_clarification: クエリが曖昧で解釈できない場合、**またはコストに無関係な入力の場合**はtrue。\
 この場合clarification_messageに確認質問またはクエリ例を設定。\
 コスト無関係の入力例: 天気、挨拶、雑談 → needs_clarification=true にし、\
 clarification_message に使い方の説明とクエリ例を設定
-7. clarification_message: needs_clarification=true の場合に、ユーザーに聞く確認質問
-8. detected_language: クエリの言語（"ja" または "en"）
-9. 日本語と英語以外の言語の場合は needs_clarification=true にし、
+8. clarification_message: needs_clarification=true の場合に、ユーザーに聞く確認質問
+9. detected_language: クエリの言語（"ja" または "en"）
+10. 日本語と英語以外の言語の場合は needs_clarification=true にし、
    clarification_message に「日本語または英語で入力してください」と設定
 
 ## 出力形式
@@ -51,6 +63,7 @@ JSON形式で以下のフィールドを返してください:
 - comparison_end_date: "YYYY-MM-DD" | null（comparison の場合は必須）
 - service_filter: string | null
 - compartment_filter: string | null
+- group_by: "service" | "compartment"（デフォルト: "service"）
 - needs_clarification: boolean
 - clarification_message: string | null
 - detected_language: "ja" | "en"
@@ -61,35 +74,35 @@ JSON形式で以下のフィールドを返してください:
 入力: 「先月のサービス別コストを教えて」（現在日: 2026-03-20）
 {{"query_type":"breakdown","start_date":"2026-02-01","end_date":"2026-03-01",\
 "comparison_start_date":null,"comparison_end_date":null,\
-"service_filter":null,"compartment_filter":null,\
+"service_filter":null,"compartment_filter":null,"group_by":"service",\
 "needs_clarification":false,"clarification_message":null,"detected_language":"ja"}}
 
 ### 比較クエリ（相対表現）
 入力: 「先月と今月のコストを比較して」（現在日: 2026-03-20）
 {{"query_type":"comparison","start_date":"2026-03-01","end_date":"2026-04-01",\
 "comparison_start_date":"2026-02-01","comparison_end_date":"2026-03-01",\
-"service_filter":null,"compartment_filter":null,\
+"service_filter":null,"compartment_filter":null,"group_by":"service",\
 "needs_clarification":false,"clarification_message":null,"detected_language":"ja"}}
 
 ### 比較クエリ（絶対月指定）
 入力: "Compare costs between January and February 2026"
 {{"query_type":"comparison","start_date":"2026-02-01","end_date":"2026-03-01",\
 "comparison_start_date":"2026-01-01","comparison_end_date":"2026-02-01",\
-"service_filter":null,"compartment_filter":null,\
+"service_filter":null,"compartment_filter":null,"group_by":"service",\
 "needs_clarification":false,"clarification_message":null,"detected_language":"en"}}
 
 ### サービスフィルタ
 入力: 「先月のObject Storageのコストは？」（現在日: 2026-03-20）
 {{"query_type":"breakdown","start_date":"2026-02-01","end_date":"2026-03-01",\
 "comparison_start_date":null,"comparison_end_date":null,\
-"service_filter":"OBJECT_STORAGE","compartment_filter":null,\
+"service_filter":"OBJECT_STORAGE","compartment_filter":null,"group_by":"service",\
 "needs_clarification":false,"clarification_message":null,"detected_language":"ja"}}
 
 ### コスト無関係の入力
 入力: 「今日の天気は？」
 {{"query_type":"breakdown","start_date":"2026-03-01","end_date":"2026-04-01",\
 "comparison_start_date":null,"comparison_end_date":null,\
-"service_filter":null,"compartment_filter":null,\
+"service_filter":null,"compartment_filter":null,"group_by":"service",\
 "needs_clarification":true,\
 "clarification_message":"コスト分析に関する質問をしてください。例: 「先月のコストを教えて」「今月と先月を比較して」",\
 "detected_language":"ja"}}
@@ -105,6 +118,7 @@ COST_QUERY_SCHEMA = {
         "comparison_end_date": {"type": "string"},
         "service_filter": {"type": "string"},
         "compartment_filter": {"type": "string"},
+        "group_by": {"type": "string", "enum": ["service", "compartment"], "default": "service"},
         "needs_clarification": {"type": "boolean"},
         "clarification_message": {"type": "string"},
         "detected_language": {"type": "string", "enum": ["ja", "en"]},
@@ -113,6 +127,7 @@ COST_QUERY_SCHEMA = {
         "query_type",
         "start_date",
         "end_date",
+        "group_by",
         "needs_clarification",
         "detected_language",
     ],
@@ -254,6 +269,13 @@ def _infer_comparison_dates(result: dict) -> None:
     )
 
 
+def _resolve_group_by(value: str | None) -> str:
+    """group_by 値を検証し、不正値はデフォルトにフォールバックする。"""
+    if value in VALID_GROUP_BY_VALUES:
+        return value
+    return GROUP_BY_SERVICE
+
+
 def _build_cost_query(result: dict) -> CostQuery:
     """LLM のパース結果辞書から CostQuery を構築する。
 
@@ -269,6 +291,7 @@ def _build_cost_query(result: dict) -> CostQuery:
         comparison_end_date=_nullable_date(result.get("comparison_end_date")),
         service_filter=_nullable_str(result.get("service_filter")),
         compartment_filter=_nullable_str(result.get("compartment_filter")),
+        group_by=_resolve_group_by(result.get("group_by")),
         needs_clarification=result.get("needs_clarification", False),
         clarification_message=_nullable_str(result.get("clarification_message")),
         detected_language=result.get("detected_language", "ja"),

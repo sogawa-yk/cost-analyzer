@@ -14,6 +14,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-20
 - N/A（ステートレス） (004-a2a-k8s-discovery)
 - Python 3.13（バックエンド）、JavaScript ES2022+（フロントエンド） + FastAPI（HTTP）、OCI SDK（GenAI + Usage API）、Alpine.js 3.x（UI）、Jinja2（テンプレート） (006-nl-chat-ui)
 - N/A（ステートレス — ブラウザメモリのみ） (006-nl-chat-ui)
+- Python 3.13 (バックエンド), JavaScript ES2022+ (フロントエンド) + FastAPI, OCI SDK, Alpine.js 3.x, htmx 2.x, Jinja2, OCI GenAI (LLMパーサー) (007-compartment-groupby)
 
 - Python 3.13 + Typer (CLI), FastAPI (HTTP), Rich (output), oci (OCI SDK), anthropic (LLM), pydantic / pydantic-settings (models/config), dateparser + python-dateutil (date utilities) (001-nl-cost-query)
 
@@ -34,9 +35,9 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13: Follow standard conventions
 
 ## Recent Changes
+- 007-compartment-groupby: Added Python 3.13 (バックエンド), JavaScript ES2022+ (フロントエンド) + FastAPI, OCI SDK, Alpine.js 3.x, htmx 2.x, Jinja2, OCI GenAI (LLMパーサー)
 - 006-nl-chat-ui: Added Python 3.13（バックエンド）、JavaScript ES2022+（フロントエンド） + FastAPI（HTTP）、OCI SDK（GenAI + Usage API）、Alpine.js 3.x（UI）、Jinja2（テンプレート）
 - 005-nl-query-quality-fix: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-- 004-a2a-k8s-discovery: Added Python 3.13（既存バックエンド）、YAML（K8s マニフェスト） + FastAPI（既存）、a2a-sdk（既存）
 
 
 <!-- MANUAL ADDITIONS START -->

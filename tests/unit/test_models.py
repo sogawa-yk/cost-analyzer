@@ -132,7 +132,7 @@ class TestServiceCost:
 
     def test_valid_service_cost(self):
         sc = ServiceCost(
-            service="COMPUTE",
+            group_key="COMPUTE",
             amount=Decimal("1234.56"),
             percentage=Decimal("45.2"),
             rank=1,
@@ -142,7 +142,7 @@ class TestServiceCost:
     def test_percentage_must_be_0_to_100(self):
         with pytest.raises(ValidationError, match="percentage"):
             ServiceCost(
-                service="COMPUTE",
+                group_key="COMPUTE",
                 amount=Decimal("100"),
                 percentage=Decimal("101"),
                 rank=1,
@@ -151,7 +151,7 @@ class TestServiceCost:
     def test_percentage_cannot_be_negative(self):
         with pytest.raises(ValidationError, match="percentage"):
             ServiceCost(
-                service="COMPUTE",
+                group_key="COMPUTE",
                 amount=Decimal("100"),
                 percentage=Decimal("-1"),
                 rank=1,
@@ -160,7 +160,7 @@ class TestServiceCost:
     def test_rank_must_be_positive(self):
         with pytest.raises(ValidationError, match="rank"):
             ServiceCost(
-                service="COMPUTE",
+                group_key="COMPUTE",
                 amount=Decimal("100"),
                 percentage=Decimal("50"),
                 rank=0,
@@ -172,8 +172,8 @@ class TestCostBreakdown:
 
     def test_valid_breakdown(self):
         items = [
-            ServiceCost(service="COMPUTE", amount=Decimal("100"), percentage=Decimal("60"), rank=1),
-            ServiceCost(service="STORAGE", amount=Decimal("66.67"), percentage=Decimal("40"), rank=2),
+            ServiceCost(group_key="COMPUTE", amount=Decimal("100"), percentage=Decimal("60"), rank=1),
+            ServiceCost(group_key="STORAGE", amount=Decimal("66.67"), percentage=Decimal("40"), rank=2),
         ]
         bd = CostBreakdown(
             period_start=date(2026, 2, 1),
@@ -190,7 +190,7 @@ class TestServiceDelta:
 
     def test_valid_delta(self):
         d = ServiceDelta(
-            service="COMPUTE",
+            group_key="COMPUTE",
             current_amount=Decimal("200"),
             previous_amount=Decimal("150"),
             absolute_change=Decimal("50"),
@@ -200,7 +200,7 @@ class TestServiceDelta:
 
     def test_percent_change_can_be_none(self):
         d = ServiceDelta(
-            service="COMPUTE",
+            group_key="COMPUTE",
             current_amount=Decimal("200"),
             previous_amount=Decimal("0"),
             absolute_change=Decimal("200"),

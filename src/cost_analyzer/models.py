@@ -30,6 +30,14 @@ class ErrorType(StrEnum):
 
 
 # ---------------------------------------------------------------------------
+# 集計軸定数
+# ---------------------------------------------------------------------------
+
+GROUP_BY_SERVICE = "service"
+GROUP_BY_COMPARTMENT = "compartment"
+VALID_GROUP_BY_VALUES = [GROUP_BY_SERVICE, GROUP_BY_COMPARTMENT]
+
+# ---------------------------------------------------------------------------
 # CostQuery（コストクエリ）
 # ---------------------------------------------------------------------------
 
@@ -44,6 +52,7 @@ class CostQuery(BaseModel):
     comparison_end_date: date | None = None
     service_filter: str | None = None
     compartment_filter: str | None = None
+    group_by: str = GROUP_BY_SERVICE
     needs_clarification: bool = False
     clarification_message: str | None = None
     detected_language: str
@@ -68,6 +77,10 @@ class CostQuery(BaseModel):
         if self.needs_clarification and not self.clarification_message:
             msg = "needs_clarification が True の場合、clarification_message は必須です。"
             raise ValueError(msg)
+
+        # group_by のバリデーション: 不正値は SERVICE にフォールバック
+        if self.group_by not in VALID_GROUP_BY_VALUES:
+            self.group_by = GROUP_BY_SERVICE
 
         # detected_language は "ja" または "en"
         if self.detected_language not in ("ja", "en"):
@@ -112,10 +125,15 @@ class CostLineItem(BaseModel):
 class ServiceCost(BaseModel):
     """コスト内訳テーブルの単一行。"""
 
-    service: str
+    group_key: str
     amount: Decimal
     percentage: Decimal = Field(ge=0, le=100)
     rank: int = Field(ge=1)
+
+    @property
+    def service(self) -> str:
+        """後方互換エイリアス。"""
+        return self.group_key
 
 
 # ---------------------------------------------------------------------------
@@ -141,11 +159,16 @@ class CostBreakdown(BaseModel):
 class ServiceDelta(BaseModel):
     """コスト比較テーブルの単一行。"""
 
-    service: str
+    group_key: str
     current_amount: Decimal
     previous_amount: Decimal
     absolute_change: Decimal
     percent_change: Decimal | None = None
+
+    @property
+    def service(self) -> str:
+        """後方互換エイリアス。"""
+        return self.group_key
 
 
 # ---------------------------------------------------------------------------

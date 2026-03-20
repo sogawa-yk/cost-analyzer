@@ -14,6 +14,7 @@ def make_cost_query(
     comparison_end_date=None,
     service_filter=None,
     compartment_filter=None,
+    group_by="service",
     needs_clarification=False,
     clarification_message=None,
     detected_language="ja",
@@ -29,6 +30,7 @@ def make_cost_query(
         comparison_end_date=comparison_end_date,
         service_filter=service_filter,
         compartment_filter=compartment_filter,
+        group_by=group_by,
         needs_clarification=needs_clarification,
         clarification_message=clarification_message,
         detected_language=detected_language,
@@ -64,8 +66,8 @@ def make_cost_breakdown(items=None, total=None, currency="USD", period_start=Non
 
     if items is None:
         items = [
-            ServiceCost(service="COMPUTE", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
-            ServiceCost(service="OBJECT_STORAGE", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
+            ServiceCost(group_key="COMPUTE", amount=Decimal("1234.56"), percentage=Decimal("64.5"), rank=1),
+            ServiceCost(group_key="OBJECT_STORAGE", amount=Decimal("678.90"), percentage=Decimal("35.5"), rank=2),
         ]
     return CostBreakdown(
         period_start=period_start or date(2026, 2, 1),

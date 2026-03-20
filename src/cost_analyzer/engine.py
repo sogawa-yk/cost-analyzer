@@ -11,6 +11,8 @@ from oci.generative_ai_inference import models as genai_models
 
 from cost_analyzer.config import get_settings, map_oci_error
 from cost_analyzer.models import (
+    GROUP_BY_COMPARTMENT,
+    GROUP_BY_SERVICE,
     ConversationalResponse,
     CostBreakdown,
     CostComparison,
@@ -21,6 +23,12 @@ from cost_analyzer.models import (
     ServiceDelta,
     TrendSummary,
 )
+
+# OCI Usage API の group_by パラメータマッピング
+_OCI_GROUP_BY_MAP = {
+    GROUP_BY_SERVICE: ["service", "currency"],
+    GROUP_BY_COMPARTMENT: ["compartmentName", "currency"],
+}
 
 logger = logging.getLogger("cost_analyzer.engine")
 
@@ -141,12 +149,15 @@ def fetch_breakdown(query: CostQuery, oci_client) -> CostBreakdown | ErrorRespon
     """
     has_scope_filter = query.service_filter is not None or query.compartment_filter is not None
 
+    api_group_by = _OCI_GROUP_BY_MAP.get(query.group_by)
+
     try:
         line_items = oci_client.request_cost_data(
             start_date=query.start_date,
             end_date=query.end_date,
             service_filter=query.service_filter,
             compartment_filter=query.compartment_filter,
+            api_group_by=api_group_by,
         )
     except Exception as e:
         logger.exception("Failed to fetch cost data")
@@ -189,12 +200,28 @@ def fetch_breakdown(query: CostQuery, oci_client) -> CostBreakdown | ErrorRespon
             ),
         )
 
-    # Aggregate by service
+    # Aggregate by group_by key
     service_totals: dict[str, Decimal] = defaultdict(Decimal)
     currency = "USD"
     for item in line_items:
-        service_totals[item.service] += item.amount
+        key = (item.compartment_name or "UNKNOWN") if query.group_by == GROUP_BY_COMPARTMENT else item.service
+        service_totals[key] += item.amount
         currency = item.currency
+
+    # 同名コンパートメント重複時は compartment_path で区別 (FR-008)
+    if query.group_by == GROUP_BY_COMPARTMENT:
+        name_to_paths: dict[str, set[str]] = defaultdict(set)
+        for item in line_items:
+            name = item.compartment_name or "UNKNOWN"
+            path = item.compartment_path or name
+            name_to_paths[name].add(path)
+        duplicates = {n for n, paths in name_to_paths.items() if len(paths) > 1}
+        if duplicates:
+            service_totals = defaultdict(Decimal)
+            for item in line_items:
+                name = item.compartment_name or "UNKNOWN"
+                key = item.compartment_path or name if name in duplicates else name
+                service_totals[key] += item.amount
 
     total = sum(service_totals.values())
 
@@ -208,7 +235,7 @@ def fetch_breakdown(query: CostQuery, oci_client) -> CostBreakdown | ErrorRespon
             percentage = Decimal("0.0")
         items.append(
             ServiceCost(
-                service=service,
+                group_key=service,
                 amount=amount,
                 percentage=percentage,
                 rank=rank,
@@ -239,7 +266,7 @@ def fetch_comparison(query: CostQuery, oci_client) -> CostComparison | ErrorResp
     if isinstance(current_result, ErrorResponse):
         return current_result
 
-    # 前期用のクエリを作成（スコープフィルタを引き継ぐ、typeはbreakdown）
+    # 前期用のクエリを作成（スコープフィルタ・group_by を引き継ぐ、typeはbreakdown）
     from cost_analyzer.models import QueryType
 
     prev_query = CostQuery(
@@ -248,18 +275,19 @@ def fetch_comparison(query: CostQuery, oci_client) -> CostComparison | ErrorResp
         end_date=query.comparison_end_date,
         service_filter=query.service_filter,
         compartment_filter=query.compartment_filter,
+        group_by=query.group_by,
         detected_language=query.detected_language,
     )
     previous_result = fetch_breakdown(prev_query, oci_client)
     if isinstance(previous_result, ErrorResponse):
         return previous_result
 
-    # サービス別の金額をマッピング
+    # group_key 別の金額をマッピング
     current_map: dict[str, Decimal] = {
-        item.service: item.amount for item in current_result.items
+        item.group_key: item.amount for item in current_result.items
     }
     previous_map: dict[str, Decimal] = {
-        item.service: item.amount for item in previous_result.items
+        item.group_key: item.amount for item in previous_result.items
     }
 
     all_services = set(current_map.keys()) | set(previous_map.keys())
@@ -279,7 +307,7 @@ def fetch_comparison(query: CostQuery, oci_client) -> CostComparison | ErrorResp
 
         deltas.append(
             ServiceDelta(
-                service=service,
+                group_key=service,
                 current_amount=current_amount,
                 previous_amount=previous_amount,
                 absolute_change=absolute_change,

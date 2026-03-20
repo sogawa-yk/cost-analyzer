@@ -8,7 +8,7 @@
     <table class="cost-table comparison-table">
       <thead>
         <tr>
-          <th x-text="$store.i18n.t('service_column')"></th>
+          <th x-text="$store.i18n.t(msg.data.group_by === 'compartment' ? 'compartment_column' : 'service_column')"></th>
           <th x-text="$store.i18n.t('prev_period')"></th>
           <th x-text="$store.i18n.t('current_period')"></th>
           <th x-text="$store.i18n.t('change_column')"></th>
@@ -16,9 +16,9 @@
         </tr>
       </thead>
       <tbody>
-        <template x-for="item in msg.data.items" :key="item.service">
+        <template x-for="item in msg.data.items" :key="item.group_key">
           <tr>
-            <td x-text="item.service"></td>
+            <td x-text="item.group_key"></td>
             <td class="amount" x-text="TableUtils.formatCurrency(item.previous_amount, msg.data.currency)"></td>
             <td class="amount" x-text="TableUtils.formatCurrency(item.current_amount, msg.data.currency)"></td>
             <td class="amount" x-bind:class="TableUtils.changeClass(item.absolute_change)"
