@@ -99,11 +99,23 @@ GET /.well-known/agent-card.json
 }
 ```
 
+### 認証
+
+A2A エンドポイント（`POST /a2a` および `GET /.well-known/agent-card.json`）はオプショナルな API キー認証をサポートする。
+
+| 条件 | 動作 |
+|---|---|
+| `A2A_API_KEY` 環境変数が未設定 | 認証なし（全リクエスト許可） |
+| `A2A_API_KEY` 環境変数が設定済み | `Authorization: Bearer <key>` または `X-API-Key: <key>` ヘッダーが必要。不正な場合は 401 を返す |
+
+認証ヘッダーの検証には HMAC 定数時間比較を使用する。
+
 ### JSON-RPC Endpoint
 
 ```
 POST /a2a
 Content-Type: application/json
+Authorization: Bearer <A2A_API_KEY>  (※ A2A_API_KEY 設定時のみ必要)
 ```
 
 #### message/send — 自然言語クエリ（analyze_cost スキル）

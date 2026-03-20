@@ -24,6 +24,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: cost-analyzer-config
+          env:
+            - name: A2A_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mini-a2a-auth
+                  key: api-key
           volumeMounts:
             - name: oci-config
               mountPath: /home/app/.oci

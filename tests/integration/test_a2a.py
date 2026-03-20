@@ -70,6 +70,125 @@ class TestAgentCardEndpoint:
 
 
 # ---------------------------------------------------------------------------
+# 004-T004: Agent Card ディスカバリ規約準拠テスト
+# ---------------------------------------------------------------------------
+
+
+class TestAgentCardDiscoveryCompliance:
+    """Agent Card が K8s ディスカバリ規約に準拠していることを検証。"""
+
+    @pytest.mark.asyncio
+    async def test_agent_card_has_name_and_description(self, client):
+        resp = await client.get("/.well-known/agent-card.json")
+        data = resp.json()
+        assert "name" in data and data["name"]
+        assert "description" in data and data["description"]
+
+    @pytest.mark.asyncio
+    async def test_agent_card_has_protocol_version(self, client):
+        resp = await client.get("/.well-known/agent-card.json")
+        data = resp.json()
+        assert data["protocolVersion"].startswith("0.3")
+
+    @pytest.mark.asyncio
+    async def test_agent_card_skills_have_required_fields(self, client):
+        resp = await client.get("/.well-known/agent-card.json")
+        skills = resp.json()["skills"]
+        for skill in skills:
+            assert "id" in skill, f"Skill missing 'id': {skill}"
+            assert "name" in skill, f"Skill missing 'name': {skill}"
+            assert "description" in skill, f"Skill missing 'description': {skill}"
+            assert "tags" in skill, f"Skill missing 'tags': {skill}"
+
+    @pytest.mark.asyncio
+    async def test_agent_card_has_capabilities(self, client):
+        resp = await client.get("/.well-known/agent-card.json")
+        data = resp.json()
+        assert "capabilities" in data
+        assert "skills" in data
+        assert len(data["skills"]) >= 1
+
+
+# ---------------------------------------------------------------------------
+# 004-T008: x-api-key ヘッダー認証統合テスト
+# ---------------------------------------------------------------------------
+
+
+class TestXApiKeyAuthentication:
+    """x-api-key ヘッダーでの A2A エンドポイント認証テスト。"""
+
+    @pytest.fixture
+    def app_with_auth(self, mock_oci_client):
+        """API キー認証有効の FastAPI テストアプリ。"""
+        with patch("cost_analyzer.a2a_server._get_oci_client", return_value=mock_oci_client):
+            with patch("cost_analyzer.api._get_oci_client", return_value=mock_oci_client):
+                with patch("cost_analyzer.api.get_settings") as mock_settings:
+                    settings = mock_settings.return_value
+                    settings.a2a_api_key = "integration-test-key"
+                    from cost_analyzer.api import app as fastapi_app
+
+                    yield fastapi_app
+
+    @pytest.fixture
+    async def auth_client(self, app_with_auth):
+        transport = ASGITransport(app=app_with_auth)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            yield c
+
+    @pytest.mark.asyncio
+    async def test_agent_card_with_x_api_key(self, auth_client):
+        resp = await auth_client.get(
+            "/.well-known/agent-card.json",
+            headers={"x-api-key": "integration-test-key"},
+        )
+        assert resp.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_a2a_endpoint_with_x_api_key(self, auth_client):
+        resp = await auth_client.post(
+            "/a2a",
+            json={
+                "jsonrpc": "2.0",
+                "id": "auth-1",
+                "method": "message/send",
+                "params": {
+                    "message": {
+                        "role": "user",
+                        "parts": [{"kind": "data", "data": {"skill": "health_check"}}],
+                        "messageId": "auth-msg-1",
+                    }
+                },
+            },
+            headers={"x-api-key": "integration-test-key"},
+        )
+        assert resp.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_agent_card_without_key_returns_401(self, auth_client):
+        resp = await auth_client.get("/.well-known/agent-card.json")
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_a2a_endpoint_without_key_returns_401(self, auth_client):
+        resp = await auth_client.post(
+            "/a2a",
+            json={
+                "jsonrpc": "2.0",
+                "id": "auth-2",
+                "method": "message/send",
+                "params": {
+                    "message": {
+                        "role": "user",
+                        "parts": [{"kind": "data", "data": {"skill": "health_check"}}],
+                        "messageId": "auth-msg-2",
+                    }
+                },
+            },
+        )
+        assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
 # T013: Natural language query integration test
 # ---------------------------------------------------------------------------
 
