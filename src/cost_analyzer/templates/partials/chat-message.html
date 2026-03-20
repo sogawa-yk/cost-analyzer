@@ -1,0 +1,40 @@
+<div x-bind:class="msg.role === 'user' ? 'chat-row user-row' : 'chat-row assistant-row'">
+  <div x-bind:class="msg.role === 'user' ? 'chat-bubble user-bubble' : 'chat-bubble assistant-bubble'">
+
+    <!-- ウェルカムメッセージ -->
+    <template x-if="msg.type === 'welcome'">
+      {% include "partials/chat-welcome.html" %}
+    </template>
+
+    <!-- ユーザーテキスト -->
+    <template x-if="msg.role === 'user'">
+      <p class="msg-text" x-text="msg.text"></p>
+    </template>
+
+    <!-- 対話文テキスト (breakdown / comparison) -->
+    <template x-if="msg.role === 'assistant' && msg.text && (msg.type === 'breakdown' || msg.type === 'comparison')">
+      <p class="msg-conversational" x-text="msg.text"></p>
+    </template>
+
+    <!-- 内訳テーブル -->
+    <template x-if="msg.type === 'breakdown' && msg.data">
+      {% include "partials/breakdown.html" %}
+    </template>
+
+    <!-- 比較テーブル -->
+    <template x-if="msg.type === 'comparison' && msg.data">
+      {% include "partials/comparison.html" %}
+    </template>
+
+    <!-- 確認メッセージ -->
+    <template x-if="msg.type === 'clarification'">
+      {% include "partials/clarification.html" %}
+    </template>
+
+    <!-- エラー -->
+    <template x-if="msg.type === 'error'">
+      {% include "partials/error.html" %}
+    </template>
+  </div>
+  <div class="msg-time" x-text="new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})"></div>
+</div>

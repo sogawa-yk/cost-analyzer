@@ -27,6 +27,12 @@ const translations = {
     status_connected: "接続中",
     status_disconnected: "切断",
     clarification_title: "確認が必要です",
+    welcome_message: "OCI コスト分析アシスタントです。コストに関する質問をどうぞ。",
+    welcome_suggestion_1: "先月のサービス別コストを教えて",
+    welcome_suggestion_2: "今月と先月のコストを比較して",
+    welcome_suggestion_3: "先月のComputeのコストは？",
+    clear_conversation: "会話をクリア",
+    typing_indicator: "回答を生成中...",
   },
   en: {
     query_placeholder: "Show me last month's cost by service",
@@ -50,6 +56,12 @@ const translations = {
     status_connected: "Connected",
     status_disconnected: "Disconnected",
     clarification_title: "Clarification Needed",
+    welcome_message: "I'm the OCI Cost Analyzer assistant. Ask me anything about your costs.",
+    welcome_suggestion_1: "Show me last month's cost by service",
+    welcome_suggestion_2: "Compare this month with last month",
+    welcome_suggestion_3: "What was last month's Compute cost?",
+    clear_conversation: "Clear conversation",
+    typing_indicator: "Generating response...",
   },
 };
 

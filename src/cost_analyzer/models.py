@@ -184,6 +184,13 @@ class TrendSummary(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class ConversationalResponse(BaseModel):
+    """LLM が生成した対話的応答文。"""
+
+    text: str = Field(min_length=1)
+    language: str = Field(pattern=r"^(ja|en)$")
+
+
 class ErrorResponse(BaseModel):
     """ユーザーに返される構造化エラー。"""
 

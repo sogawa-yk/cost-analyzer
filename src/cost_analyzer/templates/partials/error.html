@@ -1,17 +1,17 @@
-<div class="error-message">
-  <h3>✕ <span x-text="$store.app.error.message"></span></h3>
-  <p x-show="$store.app.error.guidance" x-text="$store.app.error.guidance"></p>
-  <div x-show="$store.app.error.example_queries" class="example-queries">
-    <template x-for="example in ($store.app.error.example_queries || [])" :key="example">
-      <button class="suggestion-btn"
+<div class="error-content">
+  <p class="error-text" x-text="msg.data.message || msg.text"></p>
+  <p x-show="msg.data.guidance" class="error-guidance" x-text="msg.data.guidance"></p>
+  <div x-show="msg.data.example_queries" class="example-queries">
+    <template x-for="example in (msg.data.example_queries || [])" :key="example">
+      <button class="suggestion-chip"
               x-text="example"
-              @click="$store.app.queryText = example; $store.app.error = null; $store.app.submitQuery()">
+              @click="$store.app.useSuggestion(example)">
       </button>
     </template>
   </div>
-  <button x-show="$store.app.error.error === 'api_error' || $store.app.error.error === 'network'"
+  <button x-show="msg.data.error === 'api_error' || msg.data.error === 'network'"
           class="retry-btn"
           x-text="$store.i18n.t('error_retry')"
-          @click="$store.app.error = null; $store.app.submitQuery()">
+          @click="$store.app.useSuggestion(msg.text)">
   </button>
 </div>

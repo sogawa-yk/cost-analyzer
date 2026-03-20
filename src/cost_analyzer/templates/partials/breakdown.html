@@ -1,6 +1,6 @@
 <div class="breakdown-result">
   <div class="period-label">
-    <span x-text="$store.app.result.period.start"></span> 〜 <span x-text="$store.app.result.period.end"></span>
+    <span x-text="msg.data.period.start"></span> 〜 <span x-text="msg.data.period.end"></span>
   </div>
   <div class="table-container">
     <table class="cost-table">
@@ -13,11 +13,11 @@
         </tr>
       </thead>
       <tbody>
-        <template x-for="item in $store.app.result.items" :key="item.rank">
+        <template x-for="item in msg.data.items" :key="item.rank">
           <tr>
             <td x-text="item.rank"></td>
             <td x-text="item.service"></td>
-            <td class="amount" x-text="TableUtils.formatCurrency(item.amount, $store.app.result.currency)"></td>
+            <td class="amount" x-text="TableUtils.formatCurrency(item.amount, msg.data.currency)"></td>
             <td x-text="TableUtils.formatPercentage(item.percentage)"></td>
           </tr>
         </template>
@@ -26,7 +26,7 @@
         <tr class="total-row">
           <td></td>
           <td x-text="$store.i18n.t('total_label')"></td>
-          <td class="amount" x-text="TableUtils.formatCurrency($store.app.result.total, $store.app.result.currency)"></td>
+          <td class="amount" x-text="TableUtils.formatCurrency(msg.data.total, msg.data.currency)"></td>
           <td>100%</td>
         </tr>
       </tfoot>

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -134,7 +135,12 @@ def _build_error_body(error: ErrorResponse) -> dict[str, Any]:
 @app.post("/query")
 async def query_cost(request: QueryRequest) -> JSONResponse:
     """自然言語コストクエリを処理する。"""
-    from cost_analyzer.engine import fetch_breakdown, fetch_comparison, generate_trend_summary
+    from cost_analyzer.engine import (
+        fetch_breakdown,
+        fetch_comparison,
+        generate_conversational_response,
+        generate_trend_summary,
+    )
     from cost_analyzer.parser import parse_query
 
     oci_client = _get_oci_client()
@@ -159,7 +165,8 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
         if isinstance(data, ErrorResponse):
             status = ERROR_STATUS_CODES.get(data.error_type, 502)
             return JSONResponse(status_code=status, content=_build_error_body(data))
-        return JSONResponse(content={
+
+        breakdown_body = {
             "type": "breakdown",
             "period": {"start": str(data.period_start), "end": str(data.period_end)},
             "currency": data.currency,
@@ -173,7 +180,15 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
                 for item in data.items
             ],
             "total": float(data.total),
-        })
+        }
+        conv = generate_conversational_response(
+            "breakdown",
+            json.dumps(breakdown_body, ensure_ascii=False),
+            result.detected_language,
+            oci_client,
+        )
+        breakdown_body["conversational_text"] = conv.text if conv else None
+        return JSONResponse(content=breakdown_body)
 
     # 比較クエリ
     data = fetch_comparison(result, oci_client)
@@ -182,7 +197,7 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
         return JSONResponse(status_code=status, content=_build_error_body(data))
 
     trend = generate_trend_summary(data, result.detected_language)
-    return JSONResponse(content={
+    comparison_body = {
         "type": "comparison",
         "current_period": {
             "start": str(data.current_period.period_start),
@@ -208,7 +223,15 @@ async def query_cost(request: QueryRequest) -> JSONResponse:
         "total_change": float(data.total_change),
         "total_change_percent": float(data.total_change_percent),
         "summary": trend.summary_text,
-    })
+    }
+    conv = generate_conversational_response(
+        "comparison",
+        json.dumps(comparison_body, ensure_ascii=False),
+        result.detected_language,
+        oci_client,
+    )
+    comparison_body["conversational_text"] = conv.text if conv else None
+    return JSONResponse(content=comparison_body)
 
 
 @app.get("/health")
